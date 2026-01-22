@@ -22,6 +22,7 @@ export class AppComponent implements OnInit {
   formError = signal<string | null>(null);
   submitting = signal<boolean>(false);
   isDarkMode = signal<boolean>(false);
+  isConfigured = signal<boolean>(false);
   
   guestbookForm: FormGroup;
 
@@ -34,8 +35,15 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeDarkMode();
-    this.fetchEntries();
-    this.listenToNewEntries();
+    this.isConfigured.set(this.supabaseService.isConfigured());
+    
+    if (this.isConfigured()) {
+      this.fetchEntries();
+      this.listenToNewEntries();
+    } else {
+      // If not configured, we don't need to show the loading spinner.
+      this.loading.set(false);
+    }
   }
 
   initializeDarkMode(): void {
@@ -67,12 +75,6 @@ export class AppComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    if (!this.supabaseService.isConfigured()) {
-      this.error.set('Supabase is not configured. Please add your URL and Key in src/environments/environment.ts');
-      this.loading.set(false);
-      return;
-    }
-
     try {
       const { data, error } = await this.supabaseService.getGuestbookEntries();
       if (error) {
@@ -88,8 +90,6 @@ export class AppComponent implements OnInit {
   }
   
   listenToNewEntries(): void {
-    if (!this.supabaseService.isConfigured()) return;
-
     this.supabaseService.listenToGuestbookChanges((newEntry) => {
         // Add the new entry to the top of the list, preventing duplicates.
         this.entries.update(currentEntries => {

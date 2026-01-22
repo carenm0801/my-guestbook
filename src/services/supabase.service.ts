@@ -15,14 +15,14 @@ export class SupabaseService {
     if (this.isConfigured()) {
         this.supabaseClient = supabase.createClient(environment.supabaseUrl, environment.supabaseKey);
     } else {
-        console.error("Supabase URL and Key are not configured. Please check src/environments/environment.ts");
         this.supabaseClient = null;
     }
   }
   
   isConfigured(): boolean {
-    // Check against the placeholder values to ensure the user has updated them.
-    return environment.supabaseUrl !== 'YOUR_SUPABASE_URL' && environment.supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
+    // Check for actual values, not just the placeholder strings.
+    return !!environment.supabaseUrl && environment.supabaseUrl !== 'YOUR_SUPABASE_URL' &&
+           !!environment.supabaseKey && environment.supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
   }
 
   async getGuestbookEntries(): Promise<{ data: GuestbookEntry[] | null; error: any }> {
