@@ -21,6 +21,7 @@ export class AppComponent implements OnInit {
   error = signal<string | null>(null);
   formError = signal<string | null>(null);
   submitting = signal<boolean>(false);
+  isDarkMode = signal<boolean>(false);
   
   guestbookForm: FormGroup;
 
@@ -32,7 +33,34 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initializeDarkMode();
     this.fetchEntries();
+    this.listenToNewEntries();
+  }
+
+  initializeDarkMode(): void {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme) {
+      this.isDarkMode.set(storedTheme === 'dark');
+    } else {
+      this.isDarkMode.set(prefersDark);
+    }
+    this.applyTheme();
+  }
+
+  toggleDarkMode(): void {
+    this.isDarkMode.update(value => !value);
+    localStorage.setItem('theme', this.isDarkMode() ? 'dark' : 'light');
+    this.applyTheme();
+  }
+
+  private applyTheme(): void {
+    if (this.isDarkMode()) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }
 
   async fetchEntries(): Promise<void> {
@@ -58,6 +86,18 @@ export class AppComponent implements OnInit {
       this.loading.set(false);
     }
   }
+  
+  listenToNewEntries(): void {
+    if (!this.supabaseService.isConfigured()) return;
+
+    this.supabaseService.listenToGuestbookChanges((newEntry) => {
+        // Add the new entry to the top of the list, preventing duplicates.
+        this.entries.update(currentEntries => {
+          const entryExists = currentEntries.some(e => e.id === newEntry.id);
+          return entryExists ? currentEntries : [newEntry, ...currentEntries];
+        });
+    });
+  }
 
   async onSubmit(): Promise<void> {
     if (this.guestbookForm.invalid) {
@@ -76,12 +116,19 @@ export class AppComponent implements OnInit {
         throw error;
       }
       if (data && data.length > 0) {
+        // Optimistically update the UI, but the real-time listener will also catch this.
+        // The duplicate check in the listener prevents adding it twice.
         this.entries.update(currentEntries => [data[0], ...currentEntries]);
       }
       this.guestbookForm.reset();
     } catch (e: any) {
       console.error('Error adding entry:', e);
-      this.formError.set(`Failed to submit your message: ${e.message}`);
+      let errorMessage = `Failed to submit your message: ${e.message}`;
+      // Provide a more specific error message for RLS policy failures
+      if (e.message && e.message.includes('violates row-level security policy')) {
+        errorMessage = 'Failed to save message. Please check that the INSERT Row Level Security (RLS) policy is correctly configured for the "public" role on your Supabase "guestbook" table. The "WITH CHECK" expression should simply be "true".';
+      }
+      this.formError.set(errorMessage);
     } finally {
       this.submitting.set(false);
     }

@@ -21,6 +21,7 @@ export class SupabaseService {
   }
   
   isConfigured(): boolean {
+    // Check against the placeholder values to ensure the user has updated them.
     return environment.supabaseUrl !== 'YOUR_SUPABASE_URL' && environment.supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
   }
 
@@ -46,5 +47,23 @@ export class SupabaseService {
       .select();
 
     return { data, error };
+  }
+
+  listenToGuestbookChanges(callback: (newEntry: GuestbookEntry) => void): any {
+    if (!this.supabaseClient) {
+      return null;
+    }
+    const channel = this.supabaseClient
+      .channel('public:guestbook')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'guestbook' },
+        (payload: { new: GuestbookEntry }) => {
+          callback(payload.new);
+        }
+      )
+      .subscribe();
+    
+    return channel;
   }
 }
