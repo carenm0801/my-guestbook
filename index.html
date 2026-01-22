@@ -1,56 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supabase Guestbook</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    /* Simple scrollbar styling for a more modern look */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #888;
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #555;
-    }
-    html.dark ::-webkit-scrollbar-track {
-        background: #2d3748;
-    }
-    html.dark ::-webkit-scrollbar-thumb {
-        background: #718096;
-    }
-    html.dark ::-webkit-scrollbar-thumb:hover {
-        background: #a0aec0;
-    }
-  </style>
-<script type="importmap">
-{
-  "imports": {
-    "rxjs": "https://esm.sh/rxjs@^7.8.2?conditions=es2015",
-    "rxjs/operators": "https://esm.sh/rxjs@^7.8.2/operators?conditions=es2015",
-    "rxjs/ajax": "https://esm.sh/rxjs@^7.8.2/ajax?conditions=es2015",
-    "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
-    "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
-    "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.1.1?external=rxjs",
-    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.1.1?external=rxjs",
-    "@angular/core": "https://esm.sh/@angular/core@^21.1.1?external=rxjs",
-    "@angular/common": "https://esm.sh/@angular/common@^21.1.1?external=rxjs",
-    "@angular/forms": "https://esm.sh/@angular/forms@^21.1.1?external=rxjs"
-  }
-}
-</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 방명록 서비스</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 antialiased">
-  <app-root></app-root>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-4 text-center">📝 방명록</h1>
+        
+        <div class="space-y-4">
+            <input id="username" type="text" placeholder="이름" class="w-full p-2 border rounded">
+            <textarea id="content" placeholder="메시지를 남겨주세요" class="w-full p-2 border rounded"></textarea>
+            <button onclick="saveMessage()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">등록하기</button>
+        </div>
+
+        <div id="messages" class="mt-8 space-y-2">
+            <p class="text-gray-500 text-center">메시지를 불러오는 중...</p>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ 여기에 본인의 Supabase 정보를 넣으세요!
+        const SUPABASE_URL = '여러분의_프로젝트_URL';
+        const SUPABASE_KEY = '여러분의_익명_키';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 메시지 저장 함수
+        async function saveMessage() {
+            const name = document.getElementById('username').value;
+            const content = document.getElementById('content').value;
+
+            const { error } = await supabase
+                .from('guestbook')
+                .insert([{ name, content }]);
+
+            if (error) alert('에러 발생: ' + error.message);
+            else {
+                alert('등록되었습니다!');
+                location.reload(); // 화면 새로고침
+            }
+        }
+
+        // 메시지 불러오기 함수
+        async function loadMessages() {
+            const { data, error } = await supabase
+                .from('guestbook')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            const container = document.getElementById('messages');
+            if (data) {
+                container.innerHTML = data.map(msg => `
+                    <div class="border-b py-2">
+                        <strong>${msg.name}</strong>: ${msg.content}
+                    </div>
+                `).join('');
+            }
+        }
+        loadMessages();
+    </script>
 </body>
 </html>
