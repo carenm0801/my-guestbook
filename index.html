@@ -1,66 +1,72 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 방명록 서비스</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supabase Guestbook</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* 사용자님이 주신 현대적인 스크롤바 스타일 그대로 유지 */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+    html.dark ::-webkit-scrollbar-track { background: #2d3748; }
+    html.dark ::-webkit-scrollbar-thumb { background: #718096; }
+    html.dark ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+  </style>
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h1 class="text-2xl font-bold mb-4 text-center">📝 방명록</h1>
-        
-        <div class="space-y-4">
-            <input id="username" type="text" placeholder="이름" class="w-full p-2 border rounded">
-            <textarea id="content" placeholder="메시지를 남겨주세요" class="w-full p-2 border rounded"></textarea>
-            <button onclick="saveMessage()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">등록하기</button>
-        </div>
-
-        <div id="messages" class="mt-8 space-y-2">
-            <p class="text-gray-500 text-center">메시지를 불러오는 중...</p>
-        </div>
+<body class="bg-gray-100 dark:bg-gray-900 antialiased min-h-screen flex items-center justify-center p-4">
+  
+  <div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight">Supabase Guestbook</h1>
+    
+    <div class="space-y-4">
+      <input id="username" type="text" placeholder="Your Name" 
+             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+      <textarea id="content" placeholder="Leave a message..." rows="4"
+                class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"></textarea>
+      <button onclick="saveMessage()" 
+              class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transform transition-active active:scale-95">
+        Post Message
+      </button>
     </div>
 
-    <script>
-        // ⚠️ 여기에 본인의 Supabase 정보를 넣으세요!
-        const SUPABASE_URL = '여러분의_프로젝트_URL';
-        const SUPABASE_KEY = '여러분의_익명_키';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <div id="messages" class="mt-10 space-y-4 overflow-y-auto max-h-[400px] pr-2">
+      <p class="text-gray-400 dark:text-gray-500 text-center italic">Loading thoughts...</p>
+    </div>
+  </div>
 
-        // 메시지 저장 함수
-        async function saveMessage() {
-            const name = document.getElementById('username').value;
-            const content = document.getElementById('content').value;
+  <script>
+    // ⚠️ 여기에 본인의 Supabase 정보를 정확히 넣어주세요
+    const SUPABASE_URL = '여러분의_URL';
+    const SUPABASE_KEY = '여러분의_KEY';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            const { error } = await supabase
-                .from('guestbook')
-                .insert([{ name, content }]);
+    async function saveMessage() {
+      const name = document.getElementById('username').value;
+      const content = document.getElementById('content').value;
+      if(!name || !content) return alert("Please fill all fields");
 
-            if (error) alert('에러 발생: ' + error.message);
-            else {
-                alert('등록되었습니다!');
-                location.reload(); // 화면 새로고침
-            }
-        }
+      const { error } = await _supabase.from('guestbook').insert([{ name, content }]);
+      if (error) alert(error.message);
+      else { location.reload(); }
+    }
 
-        // 메시지 불러오기 함수
-        async function loadMessages() {
-            const { data, error } = await supabase
-                .from('guestbook')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            const container = document.getElementById('messages');
-            if (data) {
-                container.innerHTML = data.map(msg => `
-                    <div class="border-b py-2">
-                        <strong>${msg.name}</strong>: ${msg.content}
-                    </div>
-                `).join('');
-            }
-        }
-        loadMessages();
-    </script>
+    async function loadMessages() {
+      const { data, error } = await _supabase.from('guestbook').select('*').order('created_at', { ascending: false });
+      const container = document.getElementById('messages');
+      if (data) {
+        container.innerHTML = data.map(msg => `
+          <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
+            <div class="font-bold text-blue-600 dark:text-blue-400 text-sm mb-1">${msg.name}</div>
+            <div class="text-gray-700 dark:text-gray-200">${msg.content}</div>
+          </div>
+        `).join('');
+      }
+    }
+    loadMessages();
+  </script>
 </body>
 </html>
