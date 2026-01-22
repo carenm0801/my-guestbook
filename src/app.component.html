@@ -115,18 +115,33 @@
           </svg>
           <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Configuration Required</h2>
           <p class="mt-2 text-base text-gray-600 dark:text-gray-400">
-            Welcome! To use this guestbook, please connect it to your Supabase project.
+            Welcome! Please connect this app to your Supabase project.
           </p>
         </div>
         <div class="mt-6 text-left bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
           <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">Please follow these 2 simple steps:</p>
-          <ol class="list-decimal list-inside mt-2 space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <ol class="list-decimal list-inside mt-2 space-y-3 text-sm text-gray-700 dark:text-gray-300">
             <li>
-              Open this file in the editor:<br>
-              <code class="mt-1 inline-block bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded font-mono text-xs">src/environments/environment.ts</code>
+              <span>Open this file in your editor:</span>
+              <div class="mt-1 flex items-center space-x-2">
+                 <code class="flex-grow bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded font-mono text-xs">src/environments/environment.ts</code>
+                 <button (click)="copyToClipboard('src/environments/environment.ts')" 
+                    class="px-3 py-1 text-xs font-semibold rounded"
+                    [class.bg-blue-600]="!pathCopied()"
+                    [class.text-white]="!pathCopied()"
+                    [class.bg-green-600]="pathCopied()"
+                    [class.text-white]="pathCopied()"
+                    [class.hover:bg-blue-700]="!pathCopied()">
+                   @if (pathCopied()) {
+                     <span>Copied!</span>
+                   } @else {
+                     <span>Copy</span>
+                   }
+                 </button>
+              </div>
             </li>
             <li>
-              In your Supabase project dashboard, go to <code class="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded font-mono text-xs">Settings > API</code> and copy your <strong>URL</strong> and <strong>anon public key</strong> into the file.
+              In your Supabase project dashboard, go to <br> <code class="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded font-mono text-xs">Settings > API</code> and copy your <strong>Project URL</strong> and <strong>anon public key</strong> into the file.
             </li>
           </ol>
         </div>

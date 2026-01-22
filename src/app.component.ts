@@ -23,6 +23,7 @@ export class AppComponent implements OnInit {
   submitting = signal<boolean>(false);
   isDarkMode = signal<boolean>(false);
   isConfigured = signal<boolean>(false);
+  pathCopied = signal<boolean>(false);
   
   guestbookForm: FormGroup;
 
@@ -142,6 +143,17 @@ export class AppComponent implements OnInit {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+    });
+  }
+
+  copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text).then(() => {
+      this.pathCopied.set(true);
+      setTimeout(() => {
+        this.pathCopied.set(false);
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
     });
   }
 }
