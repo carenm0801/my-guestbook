@@ -25,6 +25,10 @@ export class SupabaseService {
            !!environment.supabaseKey && environment.supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
   }
 
+  getSupabaseUrl(): string | null {
+    return this.isConfigured() ? environment.supabaseUrl : null;
+  }
+
   async getGuestbookEntries(): Promise<{ data: GuestbookEntry[] | null; error: any }> {
     if (!this.supabaseClient) {
         return { data: null, error: { message: 'Supabase client is not configured.' }};

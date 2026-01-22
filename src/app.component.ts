@@ -24,6 +24,7 @@ export class AppComponent implements OnInit {
   isDarkMode = signal<boolean>(false);
   isConfigured = signal<boolean>(false);
   pathCopied = signal<boolean>(false);
+  supabaseUrl = signal<string | null>(null);
   
   guestbookForm: FormGroup;
 
@@ -37,6 +38,7 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.initializeDarkMode();
     this.isConfigured.set(this.supabaseService.isConfigured());
+    this.supabaseUrl.set(this.supabaseService.getSupabaseUrl());
     
     if (this.isConfigured()) {
       this.fetchEntries();
@@ -84,7 +86,11 @@ export class AppComponent implements OnInit {
       this.entries.set(data || []);
     } catch (e: any) {
       console.error('Error fetching entries:', e);
-      this.error.set(`Failed to load guestbook entries: ${e.message}`);
+      if (e.message && e.message.includes('violates row-level security policy')) {
+        this.error.set('RLS_POLICY_ERROR');
+      } else {
+        this.error.set(`Failed to load guestbook entries: ${e.message}`);
+      }
     } finally {
       this.loading.set(false);
     }
