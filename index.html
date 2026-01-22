@@ -7,66 +7,50 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* 사용자님이 주신 현대적인 스크롤바 스타일 그대로 유지 */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #555; }
-    html.dark ::-webkit-scrollbar-track { background: #2d3748; }
-    html.dark ::-webkit-scrollbar-thumb { background: #718096; }
-    html.dark ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+    /* Simple scrollbar styling for a more modern look */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    html.dark ::-webkit-scrollbar-track {
+        background: #2d3748;
+    }
+    html.dark ::-webkit-scrollbar-thumb {
+        background: #718096;
+    }
+    html.dark ::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+    }
   </style>
+<script type="importmap">
+{
+  "imports": {
+    "rxjs": "https://esm.sh/rxjs@^7.8.2?conditions=es2015",
+    "rxjs/operators": "https://esm.sh/rxjs@^7.8.2/operators?conditions=es2015",
+    "rxjs/ajax": "https://esm.sh/rxjs@^7.8.2/ajax?conditions=es2015",
+    "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
+    "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
+    "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
+    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.1.1?external=rxjs",
+    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.1.1?external=rxjs",
+    "@angular/core": "https://esm.sh/@angular/core@^21.1.1?external=rxjs",
+    "@angular/common": "https://esm.sh/@angular/common@^21.1.1?external=rxjs",
+    "@angular/forms": "https://esm.sh/@angular/forms@^21.1.1?external=rxjs"
+  }
+}
+</script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 antialiased min-h-screen flex items-center justify-center p-4">
-  
-  <div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
-    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight">Supabase Guestbook</h1>
-    
-    <div class="space-y-4">
-      <input id="username" type="text" placeholder="Your Name" 
-             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-      <textarea id="content" placeholder="Leave a message..." rows="4"
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"></textarea>
-      <button onclick="saveMessage()" 
-              class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transform transition-active active:scale-95">
-        Post Message
-      </button>
-    </div>
-
-    <div id="messages" class="mt-10 space-y-4 overflow-y-auto max-h-[400px] pr-2">
-      <p class="text-gray-400 dark:text-gray-500 text-center italic">Loading thoughts...</p>
-    </div>
-  </div>
-
-  <script>
-    // ⚠️ 여기에 본인의 Supabase 정보를 정확히 넣어주세요
-    const SUPABASE_URL = '여러분의_URL';
-    const SUPABASE_KEY = '여러분의_KEY';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    async function saveMessage() {
-      const name = document.getElementById('username').value;
-      const content = document.getElementById('content').value;
-      if(!name || !content) return alert("Please fill all fields");
-
-      const { error } = await _supabase.from('guestbook').insert([{ name, content }]);
-      if (error) alert(error.message);
-      else { location.reload(); }
-    }
-
-    async function loadMessages() {
-      const { data, error } = await _supabase.from('guestbook').select('*').order('created_at', { ascending: false });
-      const container = document.getElementById('messages');
-      if (data) {
-        container.innerHTML = data.map(msg => `
-          <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
-            <div class="font-bold text-blue-600 dark:text-blue-400 text-sm mb-1">${msg.name}</div>
-            <div class="text-gray-700 dark:text-gray-200">${msg.content}</div>
-          </div>
-        `).join('');
-      }
-    }
-    loadMessages();
-  </script>
+<body class="bg-gray-100 dark:bg-gray-900 antialiased">
+  <app-root></app-root>
 </body>
 </html>

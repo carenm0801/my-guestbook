@@ -13,7 +13,8 @@ import { GuestbookEntry } from './types/guestbook.types';
 })
 export class AppComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
-  private fb = inject(FormBuilder);
+  // FIX: Explicitly specify the type of `fb` to `FormBuilder` to resolve a type inference issue where it was being inferred as `unknown`.
+  private fb: FormBuilder = inject(FormBuilder);
 
   entries = signal<GuestbookEntry[]>([]);
   loading = signal<boolean>(true);
@@ -87,12 +88,13 @@ export class AppComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     });
   }
 }
