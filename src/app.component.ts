@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, Validators, FormGroup, FormControl } from '@angular/forms';
 import { SupabaseService } from './services/supabase.service';
 import { GuestbookEntry } from './types/guestbook.types';
 
@@ -13,8 +13,6 @@ import { GuestbookEntry } from './types/guestbook.types';
 })
 export class AppComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
-  // FIX: Explicitly specify the type of `fb` to `FormBuilder` to resolve a type inference issue where it was being inferred as `unknown`.
-  private fb: FormBuilder = inject(FormBuilder);
 
   entries = signal<GuestbookEntry[]>([]);
   loading = signal<boolean>(true);
@@ -26,14 +24,10 @@ export class AppComponent implements OnInit {
   pathCopied = signal<boolean>(false);
   supabaseUrl = signal<string | null>(null);
   
-  guestbookForm: FormGroup;
-
-  constructor() {
-    this.guestbookForm = this.fb.group({
-      name: ['', [Validators.required, Validators.maxLength(50)]],
-      message: ['', [Validators.required, Validators.maxLength(500)]],
-    });
-  }
+  guestbookForm = new FormGroup({
+    name: new FormControl('', [Validators.required, Validators.maxLength(50)]),
+    message: new FormControl('', [Validators.required, Validators.maxLength(500)]),
+  });
 
   ngOnInit(): void {
     this.initializeDarkMode();
@@ -118,7 +112,8 @@ export class AppComponent implements OnInit {
     const { name, message } = this.guestbookForm.value;
 
     try {
-      const { data, error } = await this.supabaseService.addGuestbookEntry(name, message);
+      // Type assertion because at this point, form is valid, so values are not null.
+      const { data, error } = await this.supabaseService.addGuestbookEntry(name!, message!);
       if (error) {
         throw error;
       }

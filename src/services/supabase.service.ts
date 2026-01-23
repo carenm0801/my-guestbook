@@ -1,9 +1,15 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../environments/environment';
 import { GuestbookEntry } from '../types/guestbook.types';
 
 // Let TypeScript know about the global supabase object from the CDN
 declare const supabase: any;
+
+// Configuration is now internal to the service to prevent load-time errors.
+// FIX: Explicitly type constants as string to prevent TypeScript from inferring a literal type,
+// which causes an error when comparing against placeholder strings in `isConfigured`.
+const SUPABASE_URL: string = 'https://xyhlmtjaxoyrddivsbls.supabase.co';
+const SUPABASE_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5aGxtdGpheG95cmRkaXZzYmxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMTMwOTgsImV4cCI6MjA4NDU4OTA5OH0.KhhjIp4OL5EOsnqXPBX-soXx0gr2nl7OO_Ce-536sQ8';
+
 
 @Injectable({
   providedIn: 'root',
@@ -12,8 +18,14 @@ export class SupabaseService {
   private supabaseClient: any; // Type would be SupabaseClient if using npm package
 
   constructor() {
+    if (typeof supabase === 'undefined') {
+        console.error('Supabase client is not available. Check the CDN script in index.html.');
+        this.supabaseClient = null;
+        return;
+    }
+
     if (this.isConfigured()) {
-        this.supabaseClient = supabase.createClient(environment.supabaseUrl, environment.supabaseKey);
+        this.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
         this.supabaseClient = null;
     }
@@ -21,12 +33,12 @@ export class SupabaseService {
   
   isConfigured(): boolean {
     // Check for actual values, not just the placeholder strings.
-    return !!environment.supabaseUrl && environment.supabaseUrl !== 'YOUR_SUPABASE_URL' &&
-           !!environment.supabaseKey && environment.supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
+    return !!SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL' &&
+           !!SUPABASE_KEY && SUPABASE_KEY !== 'YOUR_SUPABASE_ANON_KEY';
   }
 
   getSupabaseUrl(): string | null {
-    return this.isConfigured() ? environment.supabaseUrl : null;
+    return this.isConfigured() ? SUPABASE_URL : null;
   }
 
   async getGuestbookEntries(): Promise<{ data: GuestbookEntry[] | null; error: any }> {
@@ -58,7 +70,7 @@ export class SupabaseService {
       return null;
     }
     const channel = this.supabaseClient
-      .channel('public:guestbook')
+      .channel('guestbook-changes')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'guestbook' },
