@@ -20,8 +20,6 @@ export class AppComponent implements OnInit {
   formError = signal<string | null>(null);
   submitting = signal<boolean>(false);
   isDarkMode = signal<boolean>(false);
-  isConfigured = signal<boolean>(false);
-  pathCopied = signal<boolean>(false);
   supabaseUrl = signal<string | null>(null);
   
   guestbookForm = new FormGroup({
@@ -31,16 +29,13 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeDarkMode();
-    this.isConfigured.set(this.supabaseService.isConfigured());
     this.supabaseUrl.set(this.supabaseService.getSupabaseUrl());
     
-    if (this.isConfigured()) {
-      this.fetchEntries();
-      this.listenToNewEntries();
-    } else {
-      // If not configured, we don't need to show the loading spinner.
-      this.loading.set(false);
-    }
+    // Now that configuration is handled internally by the service,
+    // we can directly attempt to fetch data. The service's internal
+    // error handling will let us know if there's a problem.
+    this.fetchEntries();
+    this.listenToNewEntries();
   }
 
   initializeDarkMode(): void {
@@ -75,6 +70,7 @@ export class AppComponent implements OnInit {
     try {
       const { data, error } = await this.supabaseService.getGuestbookEntries();
       if (error) {
+        // The error object from Supabase might not be a standard Error instance
         throw error;
       }
       this.entries.set(data || []);
@@ -82,8 +78,10 @@ export class AppComponent implements OnInit {
       console.error('Error fetching entries:', e);
       if (e.message && e.message.includes('violates row-level security policy')) {
         this.error.set('RLS_POLICY_ERROR');
-      } else {
+      } else if (e.message) {
         this.error.set(`Failed to load guestbook entries: ${e.message}`);
+      } else {
+        this.error.set('An unknown error occurred while fetching entries.');
       }
     } finally {
       this.loading.set(false);
@@ -120,7 +118,7 @@ export class AppComponent implements OnInit {
       if (data && data.length > 0) {
         // Optimistically update the UI, but the real-time listener will also catch this.
         // The duplicate check in the listener prevents adding it twice.
-        this.entries.update(currentEntries => [data[0], ...currentEntries]);
+        // This line is technically optional if the realtime listener is robust.
       }
       this.guestbookForm.reset();
     } catch (e: any) {
@@ -144,17 +142,6 @@ export class AppComponent implements OnInit {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    });
-  }
-
-  copyToClipboard(text: string): void {
-    navigator.clipboard.writeText(text).then(() => {
-      this.pathCopied.set(true);
-      setTimeout(() => {
-        this.pathCopied.set(false);
-      }, 2000);
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
     });
   }
 }

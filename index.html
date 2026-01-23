@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supabase Guestbook</title>
+  <title>방명록</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Simple scrollbar styling for a more modern look */
     ::-webkit-scrollbar {
       width: 8px;
     }
@@ -23,15 +22,14 @@
       background: #555;
     }
     html.dark ::-webkit-scrollbar-track {
-        background: #2d3748;
+      background: #2d3748;
     }
     html.dark ::-webkit-scrollbar-thumb {
-        background: #718096;
+      background: #718096;
     }
     html.dark ::-webkit-scrollbar-thumb:hover {
-        background: #a0aec0;
+      background: #a0aec0;
     }
-    /* Animation for new entries */
     @keyframes fadeInDown {
       from {
         opacity: 0;
@@ -42,8 +40,8 @@
         transform: translateY(0);
       }
     }
-    .guestbook-list > article:first-child {
-       animation: fadeInDown 0.5s ease-out forwards;
+    .fade-in {
+      animation: fadeInDown 0.5s ease-out forwards;
     }
   </style>
 <script type="importmap">
@@ -55,25 +53,225 @@
     "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
     "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
     "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@angular/compiler": "https://unpkg.com/@angular/compiler@^18.0.0/fesm2022/compiler.mjs",
-    "@angular/platform-browser": "https://unpkg.com/@angular/platform-browser@^18.0.0/fesm2022/platform-browser.mjs",
-    "@angular/core": "https://unpkg.com/@angular/core@^18.0.0/fesm2022/core.mjs",
-    "@angular/common": "https://unpkg.com/@angular/common@^18.0.0/fesm2022/common.mjs",
-    "@angular/forms": "https://unpkg.com/@angular/forms@^18.0.0/fesm2022/forms.mjs",
-    "@angular/common/http": "https://unpkg.com/@angular/common@^18.0.0/fesm2022/http.mjs"
+    "@angular/compiler": "https://esm.sh/@angular/compiler@^21.1.1?external=rxjs",
+    "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.1.1?external=rxjs",
+    "@angular/core": "https://esm.sh/@angular/core@^21.1.1?external=rxjs",
+    "@angular/common": "https://esm.sh/@angular/common@^21.1.1?external=rxjs",
+    "@angular/common/http": "https://esm.sh/@angular/common@^21.1.1/http?external=rxjs",
+    "@angular/forms": "https://esm.sh/@angular/forms@^21.1.1?external=rxjs"
   }
 }
 </script>
-<script>
-  // On page load or when changing themes, best to add inline in `head` to avoid FOUC
-  if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-  }
-</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 antialiased transition-colors duration-300">
-  <app-root></app-root>
+  <div class="min-h-screen py-8 px-4">
+    <div class="max-w-3xl mx-auto">
+      <!-- 헤더 -->
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 dark:text-white">방명록</h1>
+        <button id="themeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          <span class="dark:hidden">🌙</span>
+          <span class="hidden dark:inline">☀️</span>
+        </button>
+      </div>
+
+      <!-- 메시지 작성 폼 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">메시지 남기기</h2>
+        <form id="guestbookForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">이름</label>
+            <input 
+              type="text" 
+              id="nameInput" 
+              required
+              placeholder="이름을 입력하세요"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">메시지</label>
+            <textarea 
+              id="messageInput" 
+              required
+              rows="4"
+              placeholder="메시지를 입력하세요"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
+            ></textarea>
+          </div>
+          <button 
+            type="submit"
+            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors duration-200"
+          >
+            등록하기
+          </button>
+        </form>
+      </div>
+
+      <!-- 로딩 상태 -->
+      <div id="loading" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-500"></div>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">로딩 중...</p>
+      </div>
+
+      <!-- 메시지 목록 -->
+      <div id="messageList" class="space-y-4 hidden"></div>
+
+      <!-- 에러 메시지 -->
+      <div id="error" class="hidden bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded-lg mb-4"></div>
+      
+      <!-- 성공 메시지 -->
+      <div id="success" class="hidden bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 p-4 rounded-lg mb-4"></div>
+    </div>
+  </div>
+
+  <script>
+    // Supabase 초기화
+    const SUPABASE_URL = 'https://xyhlmtjaxoyrddivsbls.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5aGxtdGpheG95cmRkaXZzYmxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMTMwOTgsImV4cCI6MjA4NDU4OTA5OH0.KhhjIp4OL5EOsnqXPBX-soXx0gr2nl7OO_Ce-536sQ8';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // DOM 요소
+    const form = document.getElementById('guestbookForm');
+    const nameInput = document.getElementById('nameInput');
+    const messageInput = document.getElementById('messageInput');
+    const messageList = document.getElementById('messageList');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const success = document.getElementById('success');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // 테마 토글
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // 에러 표시
+    function showError(message) {
+      error.textContent = message;
+      error.classList.remove('hidden');
+      setTimeout(() => error.classList.add('hidden'), 5000);
+    }
+
+    // 성공 메시지 표시
+    function showSuccess(message) {
+      success.textContent = message;
+      success.classList.remove('hidden');
+      setTimeout(() => success.classList.add('hidden'), 3000);
+    }
+
+    // HTML 이스케이프
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 메시지 렌더링
+    function renderMessage(msg) {
+      const date = new Date(msg.created_at).toLocaleString('ko-KR');
+      return `
+        <article class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 fade-in">
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="font-semibold text-lg text-gray-800 dark:text-white">${escapeHtml(msg.name)}</h3>
+            <span class="text-sm text-gray-500 dark:text-gray-400">${date}</span>
+          </div>
+          <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${escapeHtml(msg.message)}</p>
+        </article>
+      `;
+    }
+
+    // 메시지 로드
+    async function loadMessages() {
+      try {
+        loading.classList.remove('hidden');
+        
+        const { data, error: fetchError } = await supabase
+          .from('guestbook')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (!data || data.length === 0) {
+          messageList.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-8">아직 메시지가 없습니다. 첫 번째 메시지를 남겨보세요!</p>';
+        } else {
+          messageList.innerHTML = data.map(renderMessage).join('');
+        }
+        messageList.classList.remove('hidden');
+      } catch (err) {
+        console.error('메시지 로드 에러:', err);
+        showError('메시지를 불러오는데 실패했습니다: ' + (err.message || '알 수 없는 오류'));
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    // 메시지 추가
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const name = nameInput.value.trim();
+      const message = messageInput.value.trim();
+
+      if (!name || !message) {
+        showError('이름과 메시지를 모두 입력해주세요.');
+        return;
+      }
+
+      try {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '등록 중...';
+
+        const { error: insertError } = await supabase
+          .from('guestbook')
+          .insert([{ name, message }]);
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // 폼 초기화
+        nameInput.value = '';
+        messageInput.value = '';
+        
+        showSuccess('메시지가 등록되었습니다!');
+
+        // 메시지 목록 새로고침
+        await loadMessages();
+
+      } catch (err) {
+        console.error('메시지 등록 에러:', err);
+        showError('메시지 등록에 실패했습니다: ' + (err.message || '알 수 없는 오류'));
+      } finally {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '등록하기';
+      }
+    });
+
+    // 실시간 구독
+    supabase
+      .channel('guestbook_changes')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'guestbook' }, 
+        () => {
+          loadMessages();
+        }
+      )
+      .subscribe();
+
+    // 초기 로드
+    loadMessages();
+  </script>
 </body>
 </html>
